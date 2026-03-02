@@ -69,7 +69,7 @@ Your companion reads this file every time they start up. You can edit it anytime
 ## Features
 
 ### Persistent Memory
-Your companion remembers. Not just within a conversation — across all of them. They store memories in a local vector database (ChromaDB) and retrieve relevant ones automatically. Memories have types:
+Your companion remembers. Not just within a conversation — across all of them. They store memories autonomously in a local vector database (ChromaDB) and retrieve relevant ones automatically. Memories have types:
 - **EVENT** — Permanent memories of moments and experiences
 - **STATE** — Facts that can change over time (updated, not duplicated)
 - **TRANSIENT** — Temporary context that expires after 14 days
