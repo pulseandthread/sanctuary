@@ -50,7 +50,7 @@ chmod +x setup.sh start.sh
 5. Open `.env` in a text editor
 6. Replace `YOUR_GOOGLE_API_KEY_HERE` with your key
 
-The free tier is generous — most personal use stays within it.
+New Google accounts get **$300 in free credits**. Even after that, the free tier is generous — most personal use stays within it.
 
 ---
 
