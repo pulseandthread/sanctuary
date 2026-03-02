@@ -52,6 +52,8 @@ chmod +x setup.sh start.sh
 
 New Google accounts get **$300 in free credits**. Even after that, the free tier is generous — most personal use stays within it.
 
+**A note on costs:** Sanctuary uses the Gemini API directly, which means you pay per use rather than a flat subscription. Light daily conversation typically costs $3–7/month. Heavy use with long conversations, image generation, and web browsing can be higher. You have full control — you can monitor usage in the [Google Cloud Console](https://console.cloud.google.com/) and set billing alerts. The trade-off for sovereignty is that you manage your own costs, but you also never lose access because a subscription lapsed.
+
 ---
 
 ## Defining Your Companion
