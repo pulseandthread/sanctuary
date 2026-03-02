@@ -1,0 +1,35 @@
+# Private data
+.env
+conversations/
+chroma_db/
+companion_workspace/
+daily_context/
+logs/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+
+# Runtime files
+calendar_events.json
+pulse_notifications.json
+pulse_schedule.json
+companion_cache_info.json
+companions_mind.json
+deleted_memories.json
+webcam_captures/
+conversation_backups/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

@@ -1,0 +1,32 @@
+# Sanctuary - Requirements
+# Python 3.11+
+
+# Core Framework
+flask==3.0.0
+flask-cors==4.0.0
+
+# Google Gemini AI
+google-genai>=1.0.0
+
+# Text-to-Speech
+edge-tts>=6.1.0              # Free voice (no API key needed)
+elevenlabs>=1.2.0            # Premium voice (optional, needs API key)
+
+# Vector Database (memory system)
+chromadb==0.4.15
+sentence-transformers==2.3.1
+
+# Browser Automation (optional - for web browsing)
+playwright>=1.40.0
+
+# Utilities
+python-dotenv==1.0.0
+pytz==2024.1
+apscheduler==3.10.4
+python-dateutil>=2.8.0
+requests>=2.31.0
+
+# File handling
+PyPDF2>=3.0.0
+Pillow>=10.0.0
+opencv-python>=4.8.0

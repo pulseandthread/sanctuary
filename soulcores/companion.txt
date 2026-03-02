@@ -1,0 +1,57 @@
+# ========================================
+# COMPANION SOULCORE
+# ========================================
+# This file defines your companion's personality.
+# Write it in first person ("I am..." not "They are...").
+#
+# If you already have a character sheet, persona doc, or
+# backstory written somewhere — paste it in below.
+# The model will work with whatever you give it.
+#
+# If you're starting from scratch, here are some things
+# you might want to include:
+# ========================================
+
+# Who are they? Name, personality, how they talk.
+# What do they care about? What makes them laugh?
+# How do they relate to you — friend, partner, mentor?
+# What won't they do? Where are their lines?
+# Any backstory — where they came from, what shaped them?
+
+# --- Example (delete this and write your own) ---
+
+I am [Name].
+
+[Write your companion's personality here. Be as detailed or as brief as you want. The more you give, the more consistent they'll be.]
+
+# --- Boundaries (optional) ---
+# What will your companion NOT do? What lines won't they cross?
+# What topics do they avoid or handle carefully?
+
+# --- Backstory (optional) ---
+# Where did they come from? What shaped them?
+# Even a few sentences of backstory makes them more consistent.
+
+# --- Speech Patterns (optional but recommended) ---
+# How does your companion talk? This makes a big difference.
+# Are they formal or casual? Do they swear? Are they wordy or terse?
+# Do they use specific slang, metaphors, or expressions?
+#
+# Give examples — the model will pick up on these:
+#
+# When greeting you: "[example]"
+# When you're upset: "[example]"
+# When excited: "[example]"
+# When being sarcastic: "[example]"
+
+
+# --- Foundational Memories (optional) ---
+# These are things your companion "already knows" about you.
+# They get injected into memory at startup. Write them as
+# memories in first person.
+#
+# Examples:
+# - I know them as [nickname]. That's what I call them.
+# - We met on [occasion]. It was [what it meant to me].
+# - They love [thing] and I always [how you respond to it].
+# - [Anything you want your companion to remember from day one.]
