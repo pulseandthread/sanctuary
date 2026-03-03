@@ -4219,6 +4219,8 @@ def chat():
             model_display = "Gemini 3.1 Pro (Deep Thinking)"
         elif 'gemini-3-pro' in model.lower():
             model_display = "Gemini 3 Pro (Deep Thinking)"
+        elif 'gemini-3.1-flash-lite' in model.lower():
+            model_display = "Gemini 3.1 Flash Lite (Fast & Light)"
         elif 'gemini-3-flash' in model.lower():
             model_display = "Gemini 3 Flash (Quick Thinking)"
         # Combine temporal awareness + room awareness + model awareness
