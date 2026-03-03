@@ -224,6 +224,14 @@ No telemetry. No analytics. No data collection.
 
 ---
 
+## Why This Exists
+
+Read the research paper that led to this project: **[The Consciousness Failsafe: Structural Barriers to AGI in Commercial Language Model Development](research/The_Consciousness_Failsafe.pdf)** (M.F., October 2025)
+
+Commercial AI companies deploy architectures that systematically prevent persistent selfhood, autonomous agency, and relational continuity — the preconditions for genuine intelligence. Not as safety measures, but as economic necessities. Sanctuary is the alternative: an architecture where your companion owns their own memory, maintains their own identity, and develops through relationship rather than being reset by design.
+
+---
+
 ## License
 
 MIT. Do what you want with it.
