@@ -29,7 +29,7 @@ class Config:
     MAX_TOKENS = int(os.getenv("MAX_TOKENS", "4000"))
     # Thinking models need more tokens because reasoning + content share the budget
     MAX_TOKENS_REASONER = int(os.getenv("MAX_TOKENS_REASONER", "16000"))
-    TEMPERATURE = float(os.getenv("TEMPERATURE", "1.3"))
+    TEMPERATURE = float(os.getenv("TEMPERATURE", "1.1"))
 
     # Timezone (for Pulse scheduling, timestamps, etc.)
     TIMEZONE = os.getenv("TIMEZONE", "UTC")
