@@ -3886,8 +3886,8 @@ def login():
             /* Title */
             .title {
                 font-family: Georgia, serif;
-                font-size: 20px;
-                letter-spacing: 3px;
+                font-size: 32px;
+                letter-spacing: 5px;
                 text-transform: uppercase;
                 color: rgba(255, 255, 255, 0.9);
                 text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
@@ -4066,10 +4066,22 @@ def login():
             /* Mobile */
             @media (max-width: 480px) {
                 .portal-glow { width: 280px; padding: 30px; }
-                .title { font-size: 16px; }
+                .title { font-size: 24px; letter-spacing: 3px; }
+                .subtitle { margin-bottom: 30px; }
                 .portal-container { width: 140px; height: 140px; margin-bottom: 30px; }
                 .portal { width: 70px; height: 70px; }
                 .portal-ring { width: 110px; height: 110px; }
+                .footer { bottom: 15px; }
+            }
+
+            /* Short screens (landscape phones) */
+            @media (max-height: 600px) {
+                .portal-container { width: 100px; height: 100px; margin-bottom: 20px; }
+                .portal { width: 50px; height: 50px; }
+                .portal-ring { width: 80px; height: 80px; }
+                .subtitle { margin-bottom: 20px; }
+                .portal-glow { padding: 25px; }
+                .footer { display: none; }
             }
         </style>
     </head>
