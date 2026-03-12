@@ -135,7 +135,6 @@ Sanctuary supports these Gemini models (selected in the UI):
 | **Gemini 3 Flash** | Smart daily conversation with thinking blocks (default) |
 | **Gemini 3.1 Flash Lite** | Fast and cheap — great for high-volume or budget-conscious use |
 | **Gemini 3.1 Pro** | Deepest reasoning and understanding |
-| Gemini 3 Pro | Deep thinking (available until Mar 9, 2026) |
 | Gemini 2.5 Pro | Solid reasoning (available until Jun 17, 2026) |
 
 Change the default model in `.env` with `MODEL_NAME=gemini-direct/gemini-3-flash-preview`.

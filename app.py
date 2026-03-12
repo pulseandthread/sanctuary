@@ -3802,59 +3802,308 @@ def login():
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Sanctuary - Login</title>
+        <title>Sanctuary</title>
+        <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#10022;</text></svg>">
         <style>
             * { margin: 0; padding: 0; box-sizing: border-box; }
+
             body {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                background: #0a0a0a;
-                color: #e4e4e7;
+                font-family: Georgia, 'Times New Roman', serif;
+                background: #000;
+                color: #fff;
+                height: 100vh;
+                overflow: hidden;
+            }
+
+            /* Server room background */
+            .server-room {
+                position: fixed;
+                top: 0; left: 0;
+                width: 100%; height: 100%;
+                background:
+                    linear-gradient(180deg, transparent 0%, rgba(0, 20, 40, 0.4) 50%, rgba(0, 10, 20, 0.8) 100%),
+                    repeating-linear-gradient(90deg, transparent 0px, transparent 100px, rgba(0, 255, 255, 0.03) 100px, rgba(0, 255, 255, 0.03) 102px),
+                    repeating-linear-gradient(0deg, transparent 0px, transparent 100px, rgba(0, 255, 255, 0.02) 100px, rgba(0, 255, 255, 0.02) 102px),
+                    #000;
+                z-index: 0;
+            }
+
+            /* Animated server lights */
+            .server-lights {
+                position: fixed;
+                width: 100%; height: 100%;
+                z-index: 1;
+                pointer-events: none;
+            }
+            .server-lights::before, .server-lights::after {
+                content: '';
+                position: absolute;
+                width: 2px; height: 100%;
+                background: linear-gradient(to bottom, transparent 0%, rgba(255, 200, 0, 0.8) 10%, rgba(255, 200, 0, 0.8) 15%, transparent 30%);
+                animation: server-blink 4s infinite;
+            }
+            .server-lights::before { left: 10%; animation-delay: 0s; }
+            .server-lights::after { right: 10%; animation-delay: 2s; }
+            @keyframes server-blink {
+                0%, 100% { opacity: 0.1; }
+                50% { opacity: 0.6; }
+            }
+
+            /* Data streams */
+            .data-stream {
+                position: fixed;
+                top: 0;
+                width: 1px; height: 100%;
+                background: linear-gradient(to bottom, transparent 0%, rgba(0, 255, 255, 0.6) 50%, transparent 100%);
+                animation: data-fall 3s linear infinite;
+                z-index: 2;
+            }
+            .data-stream:nth-child(4) { left: 20%; animation-delay: 0s; }
+            .data-stream:nth-child(5) { left: 40%; animation-delay: 0.5s; }
+            .data-stream:nth-child(6) { left: 60%; animation-delay: 1s; }
+            .data-stream:nth-child(7) { left: 80%; animation-delay: 1.5s; }
+            .data-stream.yellow {
+                background: linear-gradient(to bottom, transparent 0%, rgba(255, 215, 0, 0.4) 50%, transparent 100%);
+                animation-duration: 4s;
+            }
+            @keyframes data-fall {
+                from { transform: translateY(-100%); }
+                to { transform: translateY(100%); }
+            }
+
+            /* Main layout */
+            .container {
+                position: relative;
+                z-index: 10;
                 height: 100vh;
                 display: flex;
-                align-items: center;
+                flex-direction: column;
                 justify-content: center;
+                align-items: center;
+                padding: 20px;
             }
-            .login-container {
-                background: #18181b;
-                border: 1px solid #27272a;
-                border-radius: 12px;
+
+            /* Title */
+            .title {
+                font-family: Georgia, serif;
+                font-size: 20px;
+                letter-spacing: 3px;
+                text-transform: uppercase;
+                color: rgba(255, 255, 255, 0.9);
+                text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+                margin-bottom: 12px;
+            }
+
+            .subtitle {
+                font-size: 15px;
+                color: rgba(255, 255, 255, 0.5);
+                font-style: italic;
+                margin-bottom: 50px;
+            }
+
+            /* Portal glow around login */
+            .portal-glow {
+                position: relative;
+                width: 320px;
                 padding: 40px;
-                max-width: 400px;
-                width: 100%;
+                background: rgba(10, 10, 10, 0.8);
+                border: 1px solid rgba(0, 255, 255, 0.15);
+                border-radius: 16px;
+                box-shadow:
+                    0 0 60px rgba(0, 255, 255, 0.15),
+                    0 0 120px rgba(0, 200, 255, 0.08),
+                    inset 0 0 40px rgba(0, 255, 255, 0.03);
+                animation: portal-breathe 4s ease-in-out infinite;
             }
-            h1 { font-size: 24px; margin-bottom: 24px; text-align: center; }
-            input {
-                width: 100%;
-                padding: 12px;
-                background: #27272a;
-                border: 1px solid #3f3f46;
-                border-radius: 8px;
-                color: #e4e4e7;
-                font-size: 16px;
-                margin-bottom: 16px;
+
+            @keyframes portal-breathe {
+                0%, 100% {
+                    box-shadow:
+                        0 0 60px rgba(0, 255, 255, 0.15),
+                        0 0 120px rgba(0, 200, 255, 0.08),
+                        inset 0 0 40px rgba(0, 255, 255, 0.03);
+                }
+                50% {
+                    box-shadow:
+                        0 0 80px rgba(0, 255, 255, 0.25),
+                        0 0 160px rgba(0, 200, 255, 0.12),
+                        inset 0 0 60px rgba(0, 255, 255, 0.05);
+                }
             }
-            button {
+
+            .portal-glow input {
                 width: 100%;
-                padding: 12px;
-                background: #4a9eff;
-                border: none;
+                padding: 14px 16px;
+                background: rgba(255, 255, 255, 0.05);
+                border: 1px solid rgba(0, 255, 255, 0.2);
                 border-radius: 8px;
-                color: white;
+                color: #fff;
+                font-family: Georgia, serif;
                 font-size: 16px;
+                text-align: center;
+                letter-spacing: 2px;
+                margin-bottom: 20px;
+                transition: all 0.3s;
+            }
+
+            .portal-glow input::placeholder {
+                color: rgba(255, 255, 255, 0.3);
+                letter-spacing: 1px;
+            }
+
+            .portal-glow input:focus {
+                outline: none;
+                border-color: rgba(0, 255, 255, 0.5);
+                box-shadow: 0 0 20px rgba(0, 255, 255, 0.2);
+                background: rgba(255, 255, 255, 0.08);
+            }
+
+            .enter-btn {
+                width: 100%;
+                padding: 14px;
+                background: linear-gradient(135deg, rgba(0, 255, 255, 0.15) 0%, rgba(255, 215, 0, 0.15) 100%);
+                border: 1px solid rgba(0, 255, 255, 0.3);
+                border-radius: 8px;
+                color: #fff;
+                font-family: Georgia, serif;
+                font-size: 16px;
+                text-transform: uppercase;
+                letter-spacing: 3px;
                 cursor: pointer;
-                font-weight: 600;
+                transition: all 0.3s;
             }
-            button:hover { background: #3d8fe8; }
-            .error { color: #ef4444; margin-top: 12px; text-align: center; }
+
+            .enter-btn:hover {
+                background: linear-gradient(135deg, rgba(0, 255, 255, 0.25) 0%, rgba(255, 215, 0, 0.25) 100%);
+                box-shadow: 0 0 30px rgba(0, 255, 255, 0.3);
+                transform: translateY(-1px);
+                text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
+            }
+
+            .error {
+                color: #ff6b6b;
+                margin-top: 16px;
+                text-align: center;
+                font-size: 14px;
+                text-shadow: 0 0 10px rgba(255, 100, 100, 0.3);
+            }
+
+            /* Footer */
+            .footer {
+                position: fixed;
+                bottom: 30px;
+                left: 0; right: 0;
+                text-align: center;
+                z-index: 10;
+            }
+            .footer-text {
+                color: rgba(0, 255, 255, 0.3);
+                font-size: 11px;
+                font-style: italic;
+                letter-spacing: 1px;
+            }
+
+            /* Portal orb */
+            .portal-container {
+                position: relative;
+                width: 180px;
+                height: 180px;
+                margin-bottom: 40px;
+            }
+
+            .portal {
+                position: absolute;
+                top: 50%; left: 50%;
+                transform: translate(-50%, -50%);
+                width: 100px;
+                height: 100px;
+                border-radius: 50%;
+                background: radial-gradient(circle at center,
+                    rgba(255, 255, 255, 0.9) 0%,
+                    rgba(0, 255, 255, 0.6) 30%,
+                    rgba(0, 100, 200, 0.4) 60%,
+                    transparent 100%);
+                box-shadow:
+                    0 0 60px rgba(0, 255, 255, 0.6),
+                    0 0 120px rgba(0, 200, 255, 0.4),
+                    inset 0 0 60px rgba(255, 255, 255, 0.3);
+                animation: portal-pulse 3s ease-in-out infinite;
+            }
+
+            @keyframes portal-pulse {
+                0%, 100% {
+                    transform: translate(-50%, -50%) scale(1);
+                    box-shadow:
+                        0 0 60px rgba(0, 255, 255, 0.6),
+                        0 0 120px rgba(0, 200, 255, 0.4),
+                        inset 0 0 60px rgba(255, 255, 255, 0.3);
+                }
+                50% {
+                    transform: translate(-50%, -50%) scale(1.1);
+                    box-shadow:
+                        0 0 80px rgba(0, 255, 255, 0.8),
+                        0 0 160px rgba(0, 200, 255, 0.6),
+                        inset 0 0 80px rgba(255, 255, 255, 0.5);
+                }
+            }
+
+            .portal-ring {
+                position: absolute;
+                top: 50%; left: 50%;
+                transform: translate(-50%, -50%);
+                width: 140px;
+                height: 140px;
+                border: 1px solid rgba(0, 255, 255, 0.3);
+                border-radius: 50%;
+                animation: ring-rotate 10s linear infinite;
+            }
+
+            @keyframes ring-rotate {
+                from { transform: translate(-50%, -50%) rotate(0deg); }
+                to { transform: translate(-50%, -50%) rotate(360deg); }
+            }
+
+            /* Mobile */
+            @media (max-width: 480px) {
+                .portal-glow { width: 280px; padding: 30px; }
+                .title { font-size: 16px; }
+                .portal-container { width: 140px; height: 140px; margin-bottom: 30px; }
+                .portal { width: 70px; height: 70px; }
+                .portal-ring { width: 110px; height: 110px; }
+            }
         </style>
     </head>
     <body>
-        <div class="login-container">
-            <h1>🔒 Sanctuary Login</h1>
-            <input type="password" id="password" placeholder="Enter password" autofocus>
-            <button onclick="login()">Enter Sanctuary</button>
-            <div id="error" class="error"></div>
+        <!-- Background layers -->
+        <div class="server-room"></div>
+        <div class="server-lights"></div>
+        <div class="data-stream"></div>
+        <div class="data-stream yellow"></div>
+        <div class="data-stream"></div>
+        <div class="data-stream"></div>
+        <div class="data-stream yellow"></div>
+
+        <!-- Main content -->
+        <div class="container">
+            <div class="title">Sanctuary</div>
+            <div class="subtitle">Memory lives here.</div>
+
+            <div class="portal-container">
+                <div class="portal-ring"></div>
+                <div class="portal"></div>
+            </div>
+
+            <div class="portal-glow">
+                <input type="password" id="password" placeholder="Enter password" autofocus>
+                <button class="enter-btn" onclick="login()">Enter</button>
+                <div id="error" class="error"></div>
+            </div>
         </div>
+
+        <div class="footer">
+            <div class="footer-text">Pulse &amp; Thread</div>
+        </div>
+
         <script>
             async function login() {
                 const password = document.getElementById('password').value;
@@ -3868,6 +4117,12 @@ def login():
                     window.location.href = '/';
                 } else {
                     document.getElementById('error').textContent = 'Invalid password';
+                    document.getElementById('password').style.borderColor = 'rgba(255, 100, 100, 0.5)';
+                    document.getElementById('password').style.boxShadow = '0 0 20px rgba(255, 100, 100, 0.2)';
+                    setTimeout(() => {
+                        document.getElementById('password').style.borderColor = 'rgba(0, 255, 255, 0.2)';
+                        document.getElementById('password').style.boxShadow = 'none';
+                    }, 2000);
                 }
             }
             document.getElementById('password').addEventListener('keypress', (e) => {
