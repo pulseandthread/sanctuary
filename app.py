@@ -449,13 +449,14 @@ def build_gemini_tools() -> list:
         ),
         genai_types.FunctionDeclaration(
             name="create_memory",
-            description="Create a new memory capsule. Use this to store significant moments, facts, or states. The current room/topic is automatically tagged.",
+            description="Create a new memory capsule. Use this to store significant moments, facts, or states. The current room/topic is automatically tagged. You can attach a received image via media_filename for cross-modal search.",
             parameters=genai_types.Schema(
                 type=genai_types.Type.OBJECT,
                 properties={
                     "content": genai_types.Schema(type=genai_types.Type.STRING, description="The memory content - what you want to remember"),
                     "memory_type": genai_types.Schema(type=genai_types.Type.STRING, description="EVENT for moments/stories (permanent), STATE for facts that can change, TRANSIENT for temporary context (expires in 14 days). Defaults to EVENT."),
-                    "tags": genai_types.Schema(type=genai_types.Type.ARRAY, items=genai_types.Schema(type=genai_types.Type.STRING), description="Free-form tags like 'Health', 'Work', 'Personal', 'Memory'")
+                    "tags": genai_types.Schema(type=genai_types.Type.ARRAY, items=genai_types.Schema(type=genai_types.Type.STRING), description="Free-form tags like 'Health', 'Work', 'Personal', 'Memory'"),
+                    "media_filename": genai_types.Schema(type=genai_types.Type.STRING, description="Filename of a received image to attach (from list_received_images). Embeds the image for cross-modal search.")
                 },
                 required=["content"]
             )
@@ -2629,7 +2630,8 @@ def execute_tool(function_name, function_args, entity, chat_id, gemini_client=No
                     "type": mem.type,
                     "topic": mem.topic,
                     "tags": mem.entities,
-                    "timestamp": mem.timestamp
+                    "timestamp": mem.timestamp,
+                    **({"media_path": mem.media_path, "media_type": mem.media_type} if mem.media_path else {})
                 } for mem in memories]
                 tool_result = json.dumps({"found": len(results), "memories": results}, indent=2)
             else:
@@ -2642,24 +2644,52 @@ def execute_tool(function_name, function_args, entity, chat_id, gemini_client=No
             content = function_args.get("content", "")
             memory_type = function_args.get("memory_type", "EVENT").upper()
             tags = function_args.get("tags", [])
+            media_filename = function_args.get("media_filename")
 
             entities_list = ["companion"]
             if tags:
                 entities_list.extend(tags)
 
+            # Resolve media path if filename provided
+            media_path = None
+            media_type = None
+            if media_filename:
+                candidate = COMPANION_WORKSPACE / "received_images" / media_filename
+                if candidate.exists():
+                    media_path = str(candidate)
+                    # Detect media type from extension
+                    ext = candidate.suffix.lower()
+                    if ext in ('.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'):
+                        media_type = "image"
+                    elif ext in ('.mp3', '.wav', '.ogg', '.m4a', '.flac'):
+                        media_type = "audio"
+                    elif ext in ('.mp4', '.webm', '.mov', '.avi'):
+                        media_type = "video"
+                    else:
+                        media_type = "document"
+                    logger.info(f"Attaching media to memory: {media_filename} ({media_type})")
+                else:
+                    logger.warning(f"Media file not found: {media_filename}")
+
             capsule = MemoryCapsule(
                 summary=content,
                 entities=entities_list,
                 memory_type=memory_type,
-                topic=chat_id
+                topic=chat_id,
+                media_path=media_path,
+                media_type=media_type
             )
             memory_id = memory_engines[entity].save_memory(capsule)
+            result_msg = f"Memory stored: {content[:50]}..."
+            if media_path:
+                result_msg += f" [with {media_type}: {media_filename}]"
             tool_result = json.dumps({
                 "success": True,
                 "memory_id": memory_id,
                 "type": memory_type,
                 "topic": chat_id,
-                "message": f"Memory stored: {content[:50]}..."
+                "has_media": media_path is not None,
+                "message": result_msg
             })
         else:
             tool_result = json.dumps({"error": "Memory system not available"})
@@ -2722,7 +2752,8 @@ def execute_tool(function_name, function_args, entity, chat_id, gemini_client=No
                     "content": mem.summary,
                     "type": mem.type,
                     "tags": mem.entities,
-                    "timestamp": mem.timestamp
+                    "timestamp": mem.timestamp,
+                    **({"media_path": mem.media_path, "media_type": mem.media_type} if mem.media_path else {})
                 } for mem in recent]
                 tool_result = json.dumps({
                     "count": len(results),
@@ -3327,7 +3358,7 @@ def execute_pulse(force=False):
             "type": "function",
             "function": {
                 "name": "create_memory",
-                "description": "Create a new memory to store",
+                "description": "Create a new memory to store. You can attach a received image via media_filename for cross-modal search.",
                 "parameters": {
                     "type": "object",
                     "properties": {
@@ -3344,6 +3375,10 @@ def execute_pulse(force=False):
                             "type": "array",
                             "items": {"type": "string"},
                             "description": "Tags for the memory"
+                        },
+                        "media_filename": {
+                            "type": "string",
+                            "description": "Filename of a received image to attach (from list_received_images). Embeds the image for cross-modal search."
                         }
                     },
                     "required": ["content"]
@@ -3427,13 +3462,14 @@ def execute_pulse(force=False):
                 ),
                 genai_types.FunctionDeclaration(
                     name="create_memory",
-                    description="Create a new memory",
+                    description="Create a new memory. You can attach a received image via media_filename for cross-modal search.",
                     parameters=genai_types.Schema(
                         type=genai_types.Type.OBJECT,
                         properties={
                             "content": genai_types.Schema(type=genai_types.Type.STRING, description="Memory content"),
                             "memory_type": genai_types.Schema(type=genai_types.Type.STRING, description="Type of memory: EVENT, STATE, or TRANSIENT"),
-                            "tags": genai_types.Schema(type=genai_types.Type.ARRAY, items=genai_types.Schema(type=genai_types.Type.STRING), description="Tags for the memory")
+                            "tags": genai_types.Schema(type=genai_types.Type.ARRAY, items=genai_types.Schema(type=genai_types.Type.STRING), description="Tags for the memory"),
+                            "media_filename": genai_types.Schema(type=genai_types.Type.STRING, description="Filename of a received image to attach (from list_received_images). Embeds the image for cross-modal search.")
                         },
                         required=["content"]
                     )
@@ -3542,12 +3578,30 @@ def execute_pulse(force=False):
                                 memories = memory_engines[entity].retrieve_memories(func_args.get("query", ""), top_k=5)
                                 tool_result = "\n".join([f"- {m.summary}" for m in memories]) if memories else "No matching memories found"
                             elif func_name == "create_memory" and entity in memory_engines:
+                                pulse_media_filename = func_args.get("media_filename")
+                                pulse_media_path = None
+                                pulse_media_type = None
+                                if pulse_media_filename:
+                                    pulse_candidate = COMPANION_WORKSPACE / "received_images" / pulse_media_filename
+                                    if pulse_candidate.exists():
+                                        pulse_media_path = str(pulse_candidate)
+                                        pulse_ext = pulse_candidate.suffix.lower()
+                                        if pulse_ext in ('.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp'):
+                                            pulse_media_type = "image"
+                                        elif pulse_ext in ('.mp3', '.wav', '.ogg', '.m4a', '.flac'):
+                                            pulse_media_type = "audio"
+                                        elif pulse_ext in ('.mp4', '.webm', '.mov', '.avi'):
+                                            pulse_media_type = "video"
+                                        else:
+                                            pulse_media_type = "document"
                                 capsule = MemoryCapsule(
                                     timestamp=datetime.now().isoformat(),
                                     summary=func_args.get("content", ""),
                                     entities=[entity],
                                     memory_type=func_args.get("memory_type", "EVENT"),
-                                    topic="general"
+                                    topic="general",
+                                    media_path=pulse_media_path,
+                                    media_type=pulse_media_type
                                 )
                                 memory_id = memory_engines[entity].save_memory(capsule)
                                 tool_result = f"Memory created: {memory_id}"
@@ -4042,6 +4096,30 @@ def chat():
         if entity not in VALID_ENTITIES:
             return jsonify({"error": f"Unknown entity: {entity}"}), 400
 
+        # Save image and video attachments to disk for multimodal memory
+        received_images_dir = COMPANION_WORKSPACE / "received_images"
+        for attachment in attachments:
+            if attachment.get('type') in ('image', 'video') and attachment.get('data'):
+                try:
+                    received_images_dir.mkdir(parents=True, exist_ok=True)
+                    # Build filename from timestamp + original name
+                    ts = datetime.now().strftime('%Y%m%d_%H%M%S')
+                    orig_name = attachment.get('filename', 'media')
+                    # Get extension from mime type or filename
+                    ext = Path(orig_name).suffix
+                    if not ext:
+                        ext = '.jpg' if attachment.get('type') == 'image' else '.mp4'
+                    if not ext.startswith('.'):
+                        ext = '.' + ext
+                    save_name = f"{ts}_{Path(orig_name).stem}{ext}"
+                    save_path = received_images_dir / save_name
+                    media_bytes = base64.b64decode(attachment['data'])
+                    with open(save_path, 'wb') as media_f:
+                        media_f.write(media_bytes)
+                    logger.info(f"Saved received {attachment.get('type')}: {save_name} ({len(media_bytes):,} bytes)")
+                except Exception as media_err:
+                    logger.warning(f"Failed to save received {attachment.get('type')}: {media_err}")
+
         logger.info(f"Chat request from {entity}/{chat_id} using {model}: {user_message[:50] if user_message else '[file only]'}...")
 
         # Build static system prompt (soulcore only - cacheable!)
@@ -4377,7 +4455,7 @@ Use for grounding but do not attribute to their current message.]
                     "type": "function",
                     "function": {
                         "name": "create_memory",
-                        "description": "Create a new memory capsule. Use this to store significant moments, facts, or states. The current room/topic is automatically tagged.",
+                        "description": "Create a new memory capsule. Use this to store significant moments, facts, or states. The current room/topic is automatically tagged. You can attach a received image via media_filename for cross-modal search.",
                         "parameters": {
                             "type": "object",
                             "properties": {
@@ -4394,6 +4472,10 @@ Use for grounding but do not attribute to their current message.]
                                     "type": "array",
                                     "items": {"type": "string"},
                                     "description": "Free-form tags like 'Health', 'Work', 'Personal', 'Memory' - for building webs of meaning"
+                                },
+                                "media_filename": {
+                                    "type": "string",
+                                    "description": "Filename of a received image to attach (from list_received_images). Embeds the image for cross-modal search."
                                 }
                             },
                             "required": ["content"]
@@ -4831,13 +4913,14 @@ Use for grounding but do not attribute to their current message.]
                         ),
                         genai_types.FunctionDeclaration(
                             name="create_memory",
-                            description="Create a new memory capsule. Use this to store significant moments, facts, or states. The current room/topic is automatically tagged.",
+                            description="Create a new memory capsule. Use this to store significant moments, facts, or states. The current room/topic is automatically tagged. You can attach a received image via media_filename for cross-modal search.",
                             parameters=genai_types.Schema(
                                 type=genai_types.Type.OBJECT,
                                 properties={
                                     "content": genai_types.Schema(type=genai_types.Type.STRING, description="The memory content - what you want to remember"),
                                     "memory_type": genai_types.Schema(type=genai_types.Type.STRING, description="EVENT for moments/stories (permanent), STATE for facts that can change, TRANSIENT for temporary context (expires in 14 days). Defaults to EVENT."),
-                                    "tags": genai_types.Schema(type=genai_types.Type.ARRAY, items=genai_types.Schema(type=genai_types.Type.STRING), description="Free-form tags like 'Health', 'Work', 'Personal', 'Memory'")
+                                    "tags": genai_types.Schema(type=genai_types.Type.ARRAY, items=genai_types.Schema(type=genai_types.Type.STRING), description="Free-form tags like 'Health', 'Work', 'Personal', 'Memory'"),
+                                    "media_filename": genai_types.Schema(type=genai_types.Type.STRING, description="Filename of a received image to attach (from list_received_images). Embeds the image for cross-modal search.")
                                 },
                                 required=["content"]
                             )

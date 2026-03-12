@@ -53,7 +53,9 @@ class Config:
 
     # Memory Settings
     MAX_MEMORY_RETRIEVAL = 7  # Max memories to retrieve per query
-    EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"
+    EMBEDDING_MODEL = "sentence-transformers/all-MiniLM-L6-v2"  # Legacy fallback
+    GEMINI_EMBEDDING_MODEL = "gemini-embedding-2-preview"  # Primary embedding model (multimodal)
+    GEMINI_EMBEDDING_DIMENSIONS = 3072  # Native output dimensions
     FOUNDATIONAL_MEMORY_REFRESH_INTERVAL = 80  # Inject foundational memories every N messages
 
     # Security Settings

@@ -1,15 +1,31 @@
 """
 Sanctuary Server - Memory Engine
 Implements the hybrid STATE/EVENT memory system with Smart Sieve retrieval
+Embedding: Gemini Embedding 2 (multimodal) with local SentenceTransformer fallback
 """
 import uuid
 import logging
+import mimetypes
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 import chromadb
 from chromadb.config import Settings
-from sentence_transformers import SentenceTransformer
 from config import Config
+
+# Gemini SDK (primary embeddings)
+try:
+    from google import genai
+    from google.genai import types as genai_types
+    GEMINI_AVAILABLE = True
+except ImportError:
+    GEMINI_AVAILABLE = False
+
+# Local model (fallback)
+try:
+    from sentence_transformers import SentenceTransformer
+    LOCAL_MODEL_AVAILABLE = True
+except ImportError:
+    LOCAL_MODEL_AVAILABLE = False
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
@@ -40,7 +56,9 @@ class MemoryCapsule:
         memory_id: Optional[str] = None,
         timestamp: Optional[str] = None,
         expiration_date: Optional[str] = None,
-        topic: Optional[str] = None  # Chat topic for weighted retrieval
+        topic: Optional[str] = None,  # Chat topic for weighted retrieval
+        media_path: Optional[str] = None,  # Path to image/audio/video file
+        media_type: Optional[str] = None   # "image", "audio", "video", "document"
     ):
         self.id = memory_id or str(uuid.uuid4())
         self.timestamp = timestamp or datetime.utcnow().isoformat()
@@ -49,6 +67,8 @@ class MemoryCapsule:
         self.type = memory_type.upper()  # EVENT, STATE, or TRANSIENT
         self.status = status.upper()  # ACTIVE, SUPERSEDED, or EXPIRED
         self.topic = topic  # Chat topic (e.g., "general", "health", "creative")
+        self.media_path = media_path  # Path to attached media file
+        self.media_type = media_type  # Type of media (image, audio, video, document)
 
         # Set expiration date for TRANSIENT memories (14 days from now)
         if self.type == "TRANSIENT" and not expiration_date:
@@ -77,6 +97,10 @@ class MemoryCapsule:
             result["expiration_date"] = self.expiration_date
         if self.topic:
             result["topic"] = self.topic
+        if self.media_path:
+            result["media_path"] = self.media_path
+        if self.media_type:
+            result["media_type"] = self.media_type
         return result
 
     @classmethod
@@ -90,7 +114,9 @@ class MemoryCapsule:
             memory_type=data["type"],
             status=data["status"],
             expiration_date=data.get("expiration_date"),
-            topic=data.get("topic")
+            topic=data.get("topic"),
+            media_path=data.get("media_path"),
+            media_type=data.get("media_type")
         )
 
 
@@ -99,9 +125,10 @@ class MemoryEngine:
     The core memory system using ChromaDB with STATE/EVENT logic
 
     Key Features:
-    - Vector search for semantic similarity
+    - Vector search for semantic similarity (Gemini Embedding 2, multimodal)
     - Smart Sieve filtering (removes superseded states)
     - Separate collections per entity (data isolation)
+    - Cross-modal retrieval: text queries can match image/audio/video embeddings
     """
 
     def __init__(self, entity_name: str):
@@ -123,23 +150,127 @@ class MemoryEngine:
             settings=Settings(anonymized_telemetry=False)
         )
 
-        # Get or create collection for this entity
-        self.collection_name = self.entity_config["collection_name"]
+        # Collection name — use v2 suffix for Gemini embeddings (different dimensions)
+        self.collection_name = self.entity_config["collection_name"] + "_v2"
+        self.legacy_collection_name = self.entity_config["collection_name"]
         self.collection = self.client.get_or_create_collection(
             name=self.collection_name,
-            metadata={"entity": self.entity_name}
+            metadata={"entity": self.entity_name, "embedding_model": "gemini-embedding-2"}
         )
 
-        # Initialize embedding model
-        logger.info(f"Loading embedding model: {Config.EMBEDDING_MODEL}")
-        self.embedding_model = SentenceTransformer(Config.EMBEDDING_MODEL)
+        # Initialize Gemini embedding client (primary)
+        self.use_gemini = False
+        self.gemini_client = None
+        if GEMINI_AVAILABLE and Config.GOOGLE_API_KEY:
+            try:
+                self.gemini_client = genai.Client(api_key=Config.GOOGLE_API_KEY)
+                self.use_gemini = True
+                logger.info(f"Gemini Embedding 2 initialized (multimodal, {Config.GEMINI_EMBEDDING_DIMENSIONS}D)")
+            except Exception as e:
+                logger.warning(f"Failed to initialize Gemini embedding client: {e}")
+
+        # Initialize local model (fallback)
+        self.local_model = None
+        if not self.use_gemini:
+            if LOCAL_MODEL_AVAILABLE:
+                logger.info(f"Falling back to local embedding model: {Config.EMBEDDING_MODEL}")
+                self.local_model = SentenceTransformer(Config.EMBEDDING_MODEL)
+            else:
+                raise RuntimeError("No embedding model available: Gemini API failed and sentence-transformers not installed")
 
         logger.info(f"Memory engine initialized for entity: {entity_name}")
         logger.info(f"Collection: {self.collection_name} ({self.collection.count()} memories)")
 
-    def _generate_embedding(self, text: str) -> List[float]:
-        """Generate embedding vector for text"""
-        return self.embedding_model.encode(text).tolist()
+    def _generate_embedding(self, text: str, task_type: str = "RETRIEVAL_DOCUMENT") -> List[float]:
+        """
+        Generate embedding vector for text using Gemini Embedding 2.
+        Falls back to local SentenceTransformer if Gemini is unavailable.
+
+        Args:
+            text: The text to embed
+            task_type: Gemini task type (RETRIEVAL_DOCUMENT for saving, RETRIEVAL_QUERY for searching)
+        """
+        if self.use_gemini and self.gemini_client:
+            try:
+                result = self.gemini_client.models.embed_content(
+                    model=Config.GEMINI_EMBEDDING_MODEL,
+                    contents=text,
+                    config=genai_types.EmbedContentConfig(
+                        task_type=task_type,
+                        output_dimensionality=Config.GEMINI_EMBEDDING_DIMENSIONS
+                    )
+                )
+                return result.embeddings[0].values
+            except Exception as e:
+                logger.error(f"Gemini embedding failed: {e}")
+                if self.local_model:
+                    logger.warning("Falling back to local embedding model")
+                    return self.local_model.encode(text).tolist()
+                raise
+
+        # Local fallback
+        if self.local_model:
+            return self.local_model.encode(text).tolist()
+
+        raise RuntimeError("No embedding model available")
+
+    def _generate_media_embedding(self, media_path: str, text: str = None) -> List[float]:
+        """
+        Generate embedding for media (image/audio/video) using Gemini Embedding 2.
+        Optionally combines with text for richer embeddings.
+
+        Args:
+            media_path: Path to the media file
+            text: Optional text to embed alongside the media
+        """
+        if not self.use_gemini or not self.gemini_client:
+            # Can't embed media without Gemini — fall back to text-only
+            if text:
+                return self._generate_embedding(text)
+            raise RuntimeError("Gemini required for media embeddings")
+
+        import os
+        if not os.path.exists(media_path):
+            logger.warning(f"Media file not found: {media_path}")
+            if text:
+                return self._generate_embedding(text)
+            raise FileNotFoundError(f"Media file not found: {media_path}")
+
+        # Detect MIME type
+        mime_type, _ = mimetypes.guess_type(media_path)
+        if not mime_type:
+            mime_type = "application/octet-stream"
+
+        # Build content parts
+        contents = []
+
+        # Add media
+        with open(media_path, "rb") as f:
+            media_bytes = f.read()
+        contents.append(
+            genai_types.Part.from_bytes(data=media_bytes, mime_type=mime_type)
+        )
+
+        # Add text alongside if provided
+        if text:
+            contents.append(text)
+
+        try:
+            result = self.gemini_client.models.embed_content(
+                model=Config.GEMINI_EMBEDDING_MODEL,
+                contents=contents,
+                config=genai_types.EmbedContentConfig(
+                    task_type="RETRIEVAL_DOCUMENT",
+                    output_dimensionality=Config.GEMINI_EMBEDDING_DIMENSIONS
+                )
+            )
+            return result.embeddings[0].values
+        except Exception as e:
+            logger.error(f"Gemini media embedding failed: {e}")
+            if text:
+                logger.warning("Falling back to text-only embedding")
+                return self._generate_embedding(text)
+            raise
 
     def save_memory(self, capsule: MemoryCapsule) -> str:
         """
@@ -158,8 +289,11 @@ class MemoryEngine:
         if capsule.type == "STATE":
             self._supersede_old_states(capsule.entities)
 
-        # Generate embedding
-        embedding = self._generate_embedding(capsule.summary)
+        # Generate embedding — use media if available, otherwise text
+        if capsule.media_path and self.use_gemini:
+            embedding = self._generate_media_embedding(capsule.media_path, capsule.summary)
+        else:
+            embedding = self._generate_embedding(capsule.summary)
 
         # Build metadata
         metadata = {
@@ -177,6 +311,12 @@ class MemoryEngine:
         if capsule.topic:
             metadata["topic"] = capsule.topic
 
+        # Add media metadata
+        if capsule.media_path:
+            metadata["media_path"] = capsule.media_path
+        if capsule.media_type:
+            metadata["media_type"] = capsule.media_type
+
         # Save to ChromaDB
         self.collection.add(
             ids=[capsule.id],
@@ -193,9 +333,6 @@ class MemoryEngine:
     def _supersede_old_states(self, entities: List[str]):
         """
         Find and supersede old STATE memories with overlapping entities
-
-        This is critical logic: When a new STATE is saved (e.g., "Current bike: Tuono"),
-        we need to mark the old STATE (e.g., "Current bike: Ducati") as SUPERSEDED.
 
         Args:
             entities: Entity tags of the new STATE
@@ -257,8 +394,8 @@ class MemoryEngine:
         """
         limit = limit or Config.MAX_MEMORY_RETRIEVAL
 
-        # Generate query embedding
-        query_embedding = self._generate_embedding(query)
+        # Generate query embedding (use RETRIEVAL_QUERY for search queries)
+        query_embedding = self._generate_embedding(query, task_type="RETRIEVAL_QUERY")
 
         # Vector search (get more than limit to account for filtering)
         results = self.collection.query(
@@ -296,7 +433,9 @@ class MemoryEngine:
                 memory_type=metadata["type"],
                 status=metadata["status"],
                 expiration_date=metadata.get("expiration_date"),
-                topic=metadata.get("topic")
+                topic=metadata.get("topic"),
+                media_path=metadata.get("media_path"),
+                media_type=metadata.get("media_type")
             )
 
             # Calculate weighted score
@@ -337,8 +476,10 @@ class MemoryEngine:
                 summary=document,
                 entities=metadata["entities"].split(","),
                 memory_type=metadata["type"],
-                status=metadata.get("status", "ACTIVE"),  # Default to ACTIVE for old memories
-                topic=metadata.get("topic")
+                status=metadata.get("status", "ACTIVE"),
+                topic=metadata.get("topic"),
+                media_path=metadata.get("media_path"),
+                media_type=metadata.get("media_type")
             )
             capsules.append(capsule)
 
@@ -373,7 +514,9 @@ class MemoryEngine:
                 memory_type=metadata["type"],
                 status=metadata["status"],
                 expiration_date=metadata.get("expiration_date"),
-                topic=metadata.get("topic")
+                topic=metadata.get("topic"),
+                media_path=metadata.get("media_path"),
+                media_type=metadata.get("media_type")
             )
             capsules.append(capsule)
 
@@ -428,7 +571,9 @@ class MemoryEngine:
                 memory_type=metadata["type"],
                 status=metadata.get("status", "ACTIVE"),
                 expiration_date=metadata.get("expiration_date"),
-                topic=metadata.get("topic")
+                topic=metadata.get("topic"),
+                media_path=metadata.get("media_path"),
+                media_type=metadata.get("media_type")
             )
         except Exception as e:
             logger.error(f"Error getting memory {memory_id}: {e}")
