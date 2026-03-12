@@ -158,6 +158,11 @@ EDGE_TTS_VOICE=en-US-AriaNeural
 ELEVENLABS_API_KEY=your_key_here
 ELEVENLABS_VOICE_ID=voice_id_here
 
+# Appearance — make it yours
+# Drop an image in static/ and point to it here
+COMPANION_AVATAR=static/avatar.jpg
+CHAT_BACKGROUND=static/background.jpg
+
 # Security — protects against others on your network
 # Change this to something only you know, or leave empty to disable
 SANCTUARY_PASSWORD=sanctuary

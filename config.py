@@ -58,6 +58,10 @@ class Config:
     GEMINI_EMBEDDING_DIMENSIONS = 3072  # Native output dimensions
     FOUNDATIONAL_MEMORY_REFRESH_INTERVAL = 80  # Inject foundational memories every N messages
 
+    # Appearance Settings
+    COMPANION_AVATAR = os.getenv("COMPANION_AVATAR", "")  # Path to avatar image, e.g. "static/avatar.jpg"
+    CHAT_BACKGROUND = os.getenv("CHAT_BACKGROUND", "")  # Path to background image, e.g. "static/background.jpg"
+
     # Security Settings
     SANCTUARY_PASSWORD = os.getenv("SANCTUARY_PASSWORD", "sanctuary")
     SECRET_KEY = os.getenv("SECRET_KEY", os.urandom(24).hex())

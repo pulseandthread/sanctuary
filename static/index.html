@@ -2478,6 +2478,25 @@
 
         // Load chats and conversation on page load
         window.addEventListener('DOMContentLoaded', async () => {
+            // Load appearance settings (avatar, background)
+            try {
+                const appearanceRes = await fetch(`${API_URL}/appearance`);
+                if (appearanceRes.ok) {
+                    const appearance = await appearanceRes.json();
+                    if (appearance.companion_avatar) {
+                        const style = document.createElement('style');
+                        style.textContent = `.message.assistant .avatar { background-image: url('/${appearance.companion_avatar}'); color: transparent; }`;
+                        document.head.appendChild(style);
+                    }
+                    if (appearance.chat_background) {
+                        document.getElementById('chatMessages').style.backgroundImage = `url('/${appearance.chat_background}')`;
+                        document.getElementById('chatMessages').style.backgroundSize = 'cover';
+                        document.getElementById('chatMessages').style.backgroundPosition = 'center';
+                        document.getElementById('chatMessages').style.backgroundAttachment = 'fixed';
+                    }
+                }
+            } catch (e) { console.log('Appearance settings not available'); }
+
             await loadChats();  // Load available chats first
             await loadConversation();  // Then load current chat's conversation
             isInitialized = true;  // NOW it's safe to save

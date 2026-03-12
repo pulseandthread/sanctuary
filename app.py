@@ -6091,6 +6091,15 @@ def get_stats():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route('/appearance', methods=['GET'])
+def appearance():
+    """Return appearance settings for the frontend"""
+    return jsonify({
+        "companion_avatar": Config.COMPANION_AVATAR,
+        "chat_background": Config.CHAT_BACKGROUND
+    })
+
+
 @app.route('/health', methods=['GET'])
 def health():
     """Health check endpoint"""
