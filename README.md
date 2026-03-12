@@ -76,6 +76,10 @@ Your companion remembers. Not just within a conversation — across all of them.
 - **STATE** — Facts that can change over time (updated, not duplicated)
 - **TRANSIENT** — Temporary context that expires after 14 days
 
+**Multimodal memory:** Your companion doesn't just remember words — they remember pictures, audio, and video too. When you send a photo, your companion can save it as a memory. Later, they can find it by describing what was in it — "that sunset photo you sent me" or "the drawing you showed me last week" will find the actual image, not just a text note about it. This works because Sanctuary uses [Gemini Embedding 2](https://developers.googleblog.com/gemini-embedding-available-gemini-api/), which maps text, images, audio, and video into the same searchable space. Your words match against the content of the image itself. Cost is essentially zero — embedding a thousand memories costs less than a cent.
+
+If you're upgrading from an older version of Sanctuary, run `python migrate_embeddings.py` once to re-embed your existing memories into the new format. New installations don't need this step.
+
 ### Rooms (Chat Channels)
 Organize conversations into separate rooms. Your companion's context and memories are scoped to the active room. Create rooms for different topics — health, projects, daily life, whatever you need.
 
@@ -177,7 +181,8 @@ MAX_TOKENS_REASONER=16000
 sanctuary/
 ├── app.py                  # Main application
 ├── config.py               # Configuration loader
-├── memory_engine.py        # Vector memory system
+├── memory_engine.py        # Vector memory system (Gemini Embedding 2, multimodal)
+├── migrate_embeddings.py   # One-time migration for existing installations
 ├── computer_tool.py        # Browser automation
 ├── requirements.txt        # Python dependencies
 ├── .env                    # Your API keys (private, not tracked)
@@ -207,7 +212,7 @@ Open the `.env` file and add your key. See the [Getting Your API Key](#getting-y
 Run `python -m playwright install chromium` in your virtual environment. On Linux, you may also need: `python -m playwright install-deps`.
 
 **Memory errors on startup**
-The sentence-transformers embedding model downloads ~90MB on first run. Ensure you have internet access and disk space.
+Sanctuary uses the Gemini API for memory embeddings (same key, no extra setup). If the Gemini API is unavailable, it falls back to a local model (sentence-transformers, ~90MB download on first use).
 
 **Port already in use**
 Change `FLASK_PORT=5000` to another port in `.env`.
