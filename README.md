@@ -54,6 +54,8 @@ New Google accounts get **$300 in free credits**. Even after that, the free tier
 
 **A note on costs:** Sanctuary uses the Gemini API directly. Google offers a free tier (250 requests/day on older models) and new accounts get **$300 in free credits**. Beyond that, you pay per use — monitor your costs in the [Google Cloud Console](https://console.cloud.google.com/) and set billing alerts. Costs can grow quickly with heavy use, especially on Pro models. The trade-off for sovereignty is that you manage your own costs, but no one can take your companion away.
 
+**Set a spending cap.** Google now offers per-project budget caps. Set one in the [Cloud Console budget settings](https://console.cloud.google.com/billing) — it protects you against runaway costs and leaked API keys. Even a modest cap (e.g. $50/month) covers heavy personal use while preventing surprises.
+
 ---
 
 ## Defining Your Companion
