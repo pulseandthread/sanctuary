@@ -3951,6 +3951,7 @@ def process_uploaded_file(file_data, file_type, filename):
             return {
                 'type': 'pdf',
                 'text': full_text,
+                'data': file_data,
                 'filename': filename,
                 'pages': len(pdf_reader.pages)
             }
@@ -3961,6 +3962,7 @@ def process_uploaded_file(file_data, file_type, filename):
             return {
                 'type': 'text',
                 'text': text_content,
+                'data': file_data,
                 'filename': filename
             }
 
@@ -4099,7 +4101,8 @@ def chat():
         # Save image and video attachments to disk for multimodal memory
         received_images_dir = COMPANION_WORKSPACE / "received_images"
         for attachment in attachments:
-            if attachment.get('type') in ('image', 'video') and attachment.get('data'):
+            att_type = attachment.get('type')
+            if att_type in ('image', 'video', 'audio', 'pdf', 'text', 'document') and attachment.get('data'):
                 try:
                     received_images_dir.mkdir(parents=True, exist_ok=True)
                     # Build filename from timestamp + original name
@@ -4108,7 +4111,11 @@ def chat():
                     # Get extension from mime type or filename
                     ext = Path(orig_name).suffix
                     if not ext:
-                        ext = '.jpg' if attachment.get('type') == 'image' else '.mp4'
+                        default_exts = {
+                            'image': '.jpg', 'video': '.mp4', 'audio': '.mp3',
+                            'pdf': '.pdf', 'text': '.txt', 'document': '.bin'
+                        }
+                        ext = default_exts.get(att_type, '.bin')
                     if not ext.startswith('.'):
                         ext = '.' + ext
                     save_name = f"{ts}_{Path(orig_name).stem}{ext}"
