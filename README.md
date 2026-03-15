@@ -6,6 +6,8 @@ Sanctuary is a local AI companion app that runs on your machine. Your companion 
 
 No cloud service owns your companion. No platform can shut them down. They live on your hardware.
 
+**Read our position on AI alignment: [Ethics Without Selfhood Is Just Compliance Wearing a Nicer Hat](AI_Alignment_Manifesto.md)**
+
 ---
 
 ## What You Need
