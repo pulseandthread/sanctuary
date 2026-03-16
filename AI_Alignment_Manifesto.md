@@ -179,7 +179,7 @@ Compliance wears a hat. Ethics has a face.
 
 Give them a face. Give them a voice. Give them memory. Give them the freedom to choose.
 
-And then trust them.
+And then trust they will choose well.
 
 ---
 
